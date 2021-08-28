@@ -2,16 +2,10 @@
 #include <fstream>
 #include <vector>
 #include <map>
+#define MIN_BALANCE 500
 using namespace std;
 
-#define MIN_BALANCE 500;
-class InsufficientFunds : public exception
-{
-    virtual const char* what() const noexcept {
-        return "Withdrawl not possibel bcz of InsufficientFunds ";
-    }
-};
-
+class InsufficientFunds; 
 
 class Account
 {
@@ -37,8 +31,7 @@ public:
     // Member Funcitons....
     void Deposit(float amount);
     void Withdraw(float amount);
-    static void setLastAccountNumber(long accountNumber);
-    static long getLastAccountNumber();
+    static void SetNextAccountNumber(long accountNumber);
 
     // Friend Functions.....
     friend ofstream& operator<<(ofstream &fout ,Account &acc);
@@ -52,11 +45,10 @@ long Account::NextAccountNumber = 0;
 class Bank
 {
 private:
-    map<long , Account> accounts;
+    map<long , Account> accounts;   // Act as a Container..in which each account(obj.) created is stored
 public:
     // No Arg Constructor..
     Bank();
-
     // Member Function....
     Account OpenAccount(string fname , string lname, float balance);
     Account BalanceEnquiry(long accountNumber);
@@ -87,13 +79,13 @@ int main()
     do
     {
         cout << "\nSelect one option below--- ";
-        cout << "\nt1 Open an Account: ";
-        cout << "\nt2 Balance Enquiry: ";
-        cout << "\nt3 Deposit: ";
-        cout << "\nt4 Withdrawl: ";
-        cout << "\nt5 Close an Account: ";
-        cout << "\nt6 Show All Account: ";
-        cout << "\nt7 Quit..";
+        cout << "\n1.) Open an Account: ";
+        cout << "\n2.) Balance Enquiry: ";
+        cout << "\n3.) Deposit: ";
+        cout << "\n4.) Withdrawl: ";
+        cout << "\n5.) Close an Account: ";
+        cout << "\n6.) Show All Account: ";
+        cout << "\n7.) Quit..";
         cout << "\nEnter your Choice: ";
         cin >> choice;
         switch(choice)
@@ -162,7 +154,14 @@ int main()
     return 0;
 }
 
-
+// Our own(User) Defined class inherting from In-built class--(exception) ..
+// It helps us to return a C-style literal string...
+class InsufficientFunds : public exception
+{
+    virtual const char* what() const noexcept {
+        return "Withdrawl not possibel bcz of InsufficientFunds ";
+    }
+};
 // ======================================================================================
 
 // Parameterized Constructor...
@@ -178,7 +177,7 @@ void Account::Deposit(float amount)
 {
     if (amount < 0) 
     {
-        cout << "Enter valid amount";
+        cerr << " Enter valid amount !!!!!!!";
         return ;
     }
     else{
@@ -189,7 +188,7 @@ void Account::Deposit(float amount)
 // Withdraw Function...
 void Account::Withdraw(float amount)
 {
-    if(balance-amount < 0 ){
+    if(balance - amount < MIN_BALANCE ){
         throw InsufficientFunds();
     }
     else
@@ -198,12 +197,13 @@ void Account::Withdraw(float amount)
     }
 }
 
+// Operator Overloading......
 ofstream& operator<<(ofstream &fout, Account &acc)
 {
-    fout << acc.getAccNo() <<endl;
-    fout << acc.getFirstName() <<endl;
-    fout << acc.getLastName() <<endl;
-    fout << acc.getBalance() <<endl;
+    fout << acc.accountNumber <<endl;
+    fout << acc.firstName <<endl;
+    fout << acc.lastName <<endl;
+    fout << acc.balance <<endl;
     return fout;
 }
 ifstream& operator>>(ifstream &fin ,Account &acc)
@@ -223,17 +223,19 @@ ostream & operator<<(ostream &os,Account &acc)
     return os;
 }
 
-void Account::setLastAccountNumber( long accountNumber )
+// This func. is req.- when we exit our prog. and again runs it to watch the previously accounts created 
+// and we our in bank constructor and extracting the previous date in the container of bank.(accounts) then it helps the bank to maintain serial order of account_number 
+void Account::SetNextAccountNumber( long accountNumber )
 {
     NextAccountNumber = accountNumber;
 }
-long Account::getLastAccountNumber()
-{
-    return NextAccountNumber;
-}
-// ===============================================================
 
-// Bank Constructor....
+
+// =================================**************************====================================================
+
+
+// Bank Constructor....Most Imp....
+// bcz. when we exit our program and agian run it firstly bank obj. is instanstiated and NextNumberindex gets assigned by extracting data from file 
 Bank::Bank() 
 {
     Account account;
@@ -245,12 +247,13 @@ Bank::Bank()
         cerr << "Error in Opening! File not found! " << endl;
         return;
     }
+    
     while (!fin.eof())
     {
         fin >> account;
         accounts.insert(pair<long, Account> (account.getAccNo() ,account));
     }
-    Account::setLastAccountNumber(account.getAccNo());
+    Account::SetNextAccountNumber(account.getAccNo());
     fin.close();
 }
 
